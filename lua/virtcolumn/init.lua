@@ -123,34 +123,55 @@ local function refresh(args)
 end
 
 local function set_hl()
-  local cc_bg = api.nvim_get_hl_by_name('ColorColumn', true).background
-  if cc_bg then
-    api.nvim_set_hl(0, 'VirtColumn', { fg = cc_bg, default = true })
-  else
-    vim.cmd([[hi default link VirtColumn NonText]])
-  end
+	local cc_bg = api.nvim_get_hl_by_name('ColorColumn', true).background
+	if cc_bg then
+		api.nvim_set_hl(0, 'VirtColumn', { fg = cc_bg, default = true })
+	else
+		vim.cmd([[hi default link VirtColumn NonText]])
+	end
 end
 
-local group = api.nvim_create_augroup('virtcolumn', {})
-api.nvim_create_autocmd({
-  'WinScrolled',
-  'TextChanged',
-  'TextChangedI',
-  'BufWinEnter',
-  'InsertLeave',
-  'InsertEnter',
-  'FileChangedShellPost',
-}, { group = group, callback = refresh })
-api.nvim_create_autocmd('OptionSet', {
-  group = group,
-  callback = function()
-    vim.b.virtcolumn_items = nil
-    vim.w.virtcolumn_items = nil
-    _refresh()
-  end,
-  pattern = 'colorcolumn',
-})
-api.nvim_create_autocmd('ColorScheme', { group = group, callback = set_hl })
+local did_setup = false
 
-pcall(set_hl)
-pcall(_refresh)
+local function setup(t)
+	if did_setup then
+		return
+	end
+	did_setup = true
+
+	t = t or {}
+
+	local group = api.nvim_create_augroup('virtcolumn', {})
+	api.nvim_create_autocmd({
+		'WinScrolled',
+		'TextChanged',
+		'TextChangedI',
+		'BufWinEnter',
+		'InsertLeave',
+		'InsertEnter',
+		'FileChangedShellPost',
+	}, { group = group, callback = refresh })
+
+	api.nvim_create_autocmd('OptionSet', {
+		group = group,
+		callback = function()
+			vim.b.virtcolumn_items = nil
+			vim.w.virtcolumn_items = nil
+			_refresh()
+		end,
+		pattern = 'colorcolumn',
+	})
+
+	if t.group then
+		vim.cmd([[hi default link VirtColumn ]] .. t.group)
+	else
+		api.nvim_create_autocmd('ColorScheme', { group = group, callback = set_hl })
+		pcall(set_hl)
+	end
+
+	pcall(_refresh)
+end
+
+return {
+	setup = setup,
+}
