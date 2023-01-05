@@ -141,6 +141,10 @@ local function setup(t)
 
 	t = t or {}
 
+	if t.colorcolumn then
+		vim.o.colorcolumn = t.colorcolumn
+	end
+
 	local group = api.nvim_create_augroup('virtcolumn', {})
 	api.nvim_create_autocmd({
 		'WinScrolled',
